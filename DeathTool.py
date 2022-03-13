@@ -12,7 +12,7 @@ LICENCE
   
 MIT License
 
-Copyright (c) 2021 Gonzalez87
+Copyright (c) 2022 Gonzalez87
 Github : Gonzalez87ttv
 gonzalez87.ttv@gmail.com
 https://www.twitch.tv/gonzalez87
@@ -50,7 +50,7 @@ from time import sleep
 ###Original keyboard package by Copyright (c) 2016 Lucas Boppre Niehues under the same MIT license
 def homemade_read_hotkey(suppress=True):
     """
-    Similar to `read_key()`, but blocks until the user presses and releases a
+    Similar to 'read_key()', but blocks until the user presses and releases a
     hotkey (or single key), then returns a string representing the hotkey
     pressed.
 
@@ -70,7 +70,6 @@ def homemade_read_hotkey(suppress=True):
             kb.unhook(hooked)
             with kb._pressed_events_lock:
                 names = [e.name for e in kb._pressed_events.values()] + [event.name]
-            kb.release(names)
             return kb.get_hotkey_name(names)
         
 
@@ -150,7 +149,7 @@ class DeathTool():
         if isfile('./DeathTool.ini') is False:
             with open('./DeathTool.ini','w') as f :
                 f.write('Source = ./DeathTool_DB.dt\nDestination = ./DeathTool_visual.txt\n')
-                f.write('Add keybind = ctrl+shift+-\nDecrease keybind = ctrl+shift+=')
+                f.write('Add keybind = ctrl+shift+=\nDecrease keybind = ctrl+shift+-')
 #                f.write('\nTMI token = None\nClient ID = None\nBot name (account name) = None\nCommand prefix = None\nChannel name = None')
             self.source = './DeathTool_DB.dt'
             self.dest = './DeathTool_visual.txt'
@@ -170,22 +169,22 @@ class DeathTool():
                 line = f.readline().strip()
                 self.dest = line[14:]
                 line = f.readline().strip()
-                low_hotkey = line[14:]
-                self.dhk = kb.add_hotkey(line[14:], self.decrease)
+                up_hotkey = line[14:]
+                self.ahk = kb.add_hotkey(line[14:], self.add)
                 line = f.readline().strip()
-                up_hotkey = line[19:]
-                self.ahk = kb.add_hotkey(line[19:], self.add)
+                low_hotkey = line[19:]
+                self.dhk = kb.add_hotkey(line[19:], self.decrease)
                 self.hotkeys = (up_hotkey, low_hotkey)
                 
         #Get info from source
         if isfile(self.source) is False :
             with open(self.source,'w') as f :
                 f.write('Unknown game\t0\n')
-        self.games = {}
-        self.final_gamelist = []
-        self.total_gamelist = []
-        self.gamelist = []
-        self.infos = {}
+        self.games = {} #all games and counts
+        self.final_gamelist = [] #games finalized
+        self.total_gamelist = [] #All games
+        self.gamelist = [] #games not finalized
+        self.infos = {} #infos for all games
         with open(self.source,'r') as f :
             line = f.readline()
             while line != '' :
@@ -201,6 +200,10 @@ class DeathTool():
                     self.gamelist.append(line[0])
                 self.total_gamelist.append(line[0])
                 line = f.readline()
+            if len(self.gamelist) < 1 :
+                self.gamelist.append('Unknown game')
+                self.games['Unkown game'] = 0
+                self.total_gamelist.append('Unkown game')
         self.currgame = self.gamelist[0]
         
         #set the counter and game from the source info
@@ -499,6 +502,25 @@ class DeathTool():
                         self.hotkeys = (AddHkVar.get(), DecreaseHkVar.get())
                         self.dhk = kb.add_hotkey(DecreaseHkVar.get(), self.decrease)
                         self.ahk = kb.add_hotkey(AddHkVar.get(), self.add)
+                        
+                        answer = askokcancel('Default?','Would you like to make '+
+                                             'these keybinds the defaults?') 
+                        if answer is True :
+                            with open('./DeathTool.ini','r') as f :
+                                text = f.readlines()
+                            for idx, line in enumerate(text) :
+                                if line.startswith('Add keybind = ') :
+                                    text[idx] = 'Add keybind = %s\n' %(self.hotkeys[0])
+                                elif line.startswith('Decrease keybind = ') :
+                                    text[idx] = 'Decrease keybind = %s\n' %(self.hotkeys[1])
+    
+                            with open('./DeathTool.ini','w') as f :
+                                for lines in text :
+                                    f.write(lines)
+
+
+
+                        
                         ConfigW.destroy()
                     
                 
@@ -582,6 +604,10 @@ class DeathTool():
             """
             self.final_gamelist.append(self.currgame)
             self.gamelist.remove(self.currgame)
+            if len(self.gamelist) < 1 :
+                self.gamelist.append('Unknown game')
+                self.games['Unkown game'] = 0
+                self.total_gamelist.append('Unkown game')
             self.infos[self.currgame].append('FINAL')
                 
             self.NameOM['menu'].delete(0, 'end')
@@ -804,12 +830,16 @@ class DeathTool():
                         self.final_gamelist.remove(game)
                     else :
                         self.gamelist.remove(game)
+                        if len(self.gamelist) < 1 :
+                            self.gamelist.append('Unknown game')
+                            self.games['Unkown game'] = 0
+                            self.total_gamelist.append('Unkown game')
                         
                     self.games.pop(game)
                     self.total_gamelist.remove(game)
                     self.infos.pop(game)
                     if self.currgame == game :
-                        self.currgame
+                        self.currgame = self.gamelist[0]
                         self.NameOMVar.set(self.gamelist[0])
                     self.NameEVar.set('')
                         
